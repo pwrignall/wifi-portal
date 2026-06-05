@@ -29,6 +29,15 @@ echo "  Home net:    $HOME_SUBNET (blocked from guests)"
 echo "  Portal port: $PORTAL_PORT"
 
 # ---------------------------------------------------------------------------
+# Ensure the guest interface has its static IP.
+# This is the authoritative assignment — works whether the system uses
+# NetworkManager, dhcpcd, or neither, because we set it directly.
+# ---------------------------------------------------------------------------
+ip addr flush dev "$WLAN_IF" 2>/dev/null || true
+ip addr add "${GUEST_GW}/24" dev "$WLAN_IF" 2>/dev/null || true
+ip link set "$WLAN_IF" up
+
+# ---------------------------------------------------------------------------
 # Flush everything cleanly
 # ---------------------------------------------------------------------------
 iptables -F
