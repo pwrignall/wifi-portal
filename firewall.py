@@ -46,15 +46,47 @@ def _run(*args, check: bool = True) -> bool:
 
 
 def get_client_mac(ip: str):
-    """Look up a client's MAC address from the kernel ARP table."""
+    """Look up a client's MAC address from the kernel ARP table.
+
+    Tries three sources in order so we don't depend on net-tools (arp) being
+    installed — iproute2 and /proc/net/arp are present on every Pi OS image.
+    """
+    # 1. /proc/net/arp — direct kernel table read, no subprocess needed.
+    try:
+        with open("/proc/net/arp") as f:
+            for line in f:
+                parts = line.split()
+                # Columns: IP HWtype Flags HWaddr Mask Device
+                if len(parts) >= 4 and parts[0] == ip:
+                    mac = parts[3]
+                    if _MAC_RE.match(mac) and mac != "00:00:00:00:00:00":
+                        return mac.upper()
+    except Exception:
+        pass
+
+    # 2. ip neigh show — iproute2, installed by default on all Raspberry Pi OS images.
+    try:
+        result = subprocess.run(
+            ["ip", "neigh", "show", ip], capture_output=True, text=True, timeout=2
+        )
+        m = _MAC_RE.search(result.stdout)
+        if m:
+            return m.group(0).upper()
+    except Exception:
+        pass
+
+    # 3. arp -n — net-tools fallback; may not be installed on Bookworm.
     try:
         result = subprocess.run(
             ["arp", "-n", ip], capture_output=True, text=True, timeout=2
         )
         m = _MAC_RE.search(result.stdout)
-        return m.group(0).upper() if m else None
+        if m:
+            return m.group(0).upper()
     except Exception:
-        return None
+        pass
+
+    return None
 
 
 def allow_mac(mac: str) -> None:

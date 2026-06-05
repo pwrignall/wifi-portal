@@ -327,9 +327,24 @@ def login():
 
     clear_failed_logins(client_ip)
     mac = get_client_mac(client_ip)
-    if mac:
-        authenticate_client(mac, client_ip)
+    if not mac:
+        # The ARP entry may not exist yet if the client connected moments ago.
+        # A single ping from the Pi forces the kernel to resolve the MAC.
+        subprocess.run(
+            ["ping", "-c", "1", "-W", "1", "-I", WLAN_IF, client_ip],
+            capture_output=True, timeout=3,
+        )
+        mac = get_client_mac(client_ip)
 
+    if not mac:
+        app.logger.error("Could not resolve MAC for %s — cannot open firewall", client_ip)
+        return render_template(
+            "portal.html",
+            ssid=SSID,
+            error="Could not identify your device. Please disconnect, reconnect to the WiFi, and try again.",
+        ), 500
+
+    authenticate_client(mac, client_ip)
     return redirect(url_for("success"))
 
 
