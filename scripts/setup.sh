@@ -108,17 +108,28 @@ systemctl stop hostapd dnsmasq wpa_supplicant 2>/dev/null || true
 systemctl unmask hostapd 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 3. Configure static IP for wlan0 via dhcpcd
+# 3. Tell the network manager to leave wlan0 alone
+#    (hostapd and iptables.sh handle the interface directly)
 # ---------------------------------------------------------------------------
-info "Configuring static IP for $WLAN_IF..."
-DHCPCD_CONF="/etc/dhcpcd.conf"
+info "Configuring $WLAN_IF static IP..."
 
-# Remove any existing wlan0 static block we wrote previously
-if grep -q "# wifi-portal: begin" "$DHCPCD_CONF" 2>/dev/null; then
-    sed -i '/# wifi-portal: begin/,/# wifi-portal: end/d' "$DHCPCD_CONF"
-fi
+if systemctl is-active --quiet NetworkManager 2>/dev/null; then
+    # Raspberry Pi OS Bookworm (and most modern systems): use NetworkManager.
+    # Mark wlan0 as unmanaged so NM doesn't reassign or reset the address.
+    mkdir -p /etc/NetworkManager/conf.d
+    cat > /etc/NetworkManager/conf.d/wifi-portal.conf <<EOF
+[keyfile]
+unmanaged-devices=interface-name:$WLAN_IF
+EOF
+    systemctl reload NetworkManager
+    ok "NetworkManager told to ignore $WLAN_IF."
 
-cat >> "$DHCPCD_CONF" <<EOF
+elif [ -f /etc/dhcpcd.conf ]; then
+    # Raspberry Pi OS Bullseye and earlier: configure via dhcpcd.
+    if grep -q "# wifi-portal: begin" /etc/dhcpcd.conf 2>/dev/null; then
+        sed -i '/# wifi-portal: begin/,/# wifi-portal: end/d' /etc/dhcpcd.conf
+    fi
+    cat >> /etc/dhcpcd.conf <<EOF
 
 # wifi-portal: begin
 interface $WLAN_IF
@@ -126,7 +137,17 @@ interface $WLAN_IF
     nohook wpa_supplicant
 # wifi-portal: end
 EOF
-ok "Static IP $GUEST_GW/24 configured for $WLAN_IF."
+    ok "dhcpcd configured with static IP $GUEST_GW/24 on $WLAN_IF."
+
+else
+    warn "Neither NetworkManager nor dhcpcd detected — the static IP for $WLAN_IF"
+    warn "will be set at runtime by iptables.sh on each service start."
+fi
+
+# Apply the address immediately for the rest of this script.
+ip addr flush dev "$WLAN_IF" 2>/dev/null || true
+ip addr add "${GUEST_GW}/24" dev "$WLAN_IF" 2>/dev/null || true
+ip link set "$WLAN_IF" up
 
 # ---------------------------------------------------------------------------
 # 4. Configure hostapd
@@ -281,8 +302,6 @@ ok "Systemd services installed."
 # 11. Start everything
 # ---------------------------------------------------------------------------
 info "Starting services..."
-systemctl restart dhcpcd
-sleep 2
 systemctl start hostapd
 systemctl start dnsmasq
 systemctl start wifi-portal
