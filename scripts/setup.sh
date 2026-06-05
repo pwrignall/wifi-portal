@@ -94,9 +94,9 @@ ok "System packages installed."
 # Install uv (fast Python package manager)
 info "Installing uv..."
 if ! command -v uv &>/dev/null; then
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    # Make uv available in the current shell session
-    export PATH="$HOME/.cargo/bin:$PATH"
+    # Install into /usr/local/bin so it is on PATH immediately and system-wide
+    # (avoids the ~/.local/bin PATH problem when running as root via sudo).
+    curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/usr/local/bin sh
 fi
 ok "uv installed: $(uv --version)"
 
