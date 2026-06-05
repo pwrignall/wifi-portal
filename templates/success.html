@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Connected — {{ ssid }}{% endblock %}
+{% block body %}
+<div class="card" style="text-align:center">
+  <span class="success-icon">&#10003;</span>
+  <h1>You're connected</h1>
+  <span class="ssid">{{ ssid }}</span>
+  <p style="margin-top:0.75rem">You now have internet access. Enjoy your visit!</p>
+</div>
+{% endblock %}

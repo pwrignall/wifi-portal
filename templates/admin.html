@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Admin — {{ ssid }}{% endblock %}
+{% block body %}
+<div class="card card-wide">
+
+  <nav>
+    <h1>Admin — {{ ssid }}</h1>
+    <a href="/admin/logout" class="btn btn-outline btn-sm">Sign out</a>
+  </nav>
+
+  <!-- Current guest password -->
+  <h2>Guest Password</h2>
+  <div class="password-display">{{ password }}</div>
+  <p class="meta">Last rotated: {{ rotated }} &nbsp;·&nbsp; Rotates automatically on the 1st of each month</p>
+
+  {% if qr_available %}
+  <p style="margin-bottom:0.5rem;font-size:0.875rem;color:#555">
+    QR code encodes the password above — show or share it so guests can scan and type it in.
+  </p>
+  <img src="/admin/qr.png" alt="Password QR code"
+       style="width:160px;height:160px;border-radius:8px;display:block;margin-bottom:1rem">
+  {% endif %}
+
+  <form method="post" action="/admin/rotate"
+        onsubmit="return confirm('Rotate the password now? All current guest sessions will be disconnected.')">
+    <button type="submit" class="btn btn-danger btn-sm">Rotate password now</button>
+  </form>
+
+  <hr class="divider">
+
+  <!-- Add IoT device -->
+  <h2>Smart Devices (IoT bypass)</h2>
+  <p style="font-size:0.875rem">
+    Devices registered here skip the captive portal entirely — they connect and get internet
+    access immediately. Find a device's MAC address in its network settings or your router's
+    DHCP table.
+  </p>
+
+  <form method="post" action="/admin/devices" style="margin-bottom:1.25rem">
+    <input type="hidden" name="action" value="add">
+    <div class="row" style="margin-bottom:0.5rem">
+      <input type="text" name="mac" placeholder="MAC — e.g. AA:BB:CC:DD:EE:FF"
+             pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" required
+             title="Enter a valid MAC address (AA:BB:CC:DD:EE:FF)">
+      <input type="text" name="label" placeholder="Label — e.g. Smart TV">
+      <input type="text" name="ip" placeholder="IP (optional)">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm" style="width:auto">Add device</button>
+  </form>
+
+  {% set iot_sessions = sessions | selectattr("is_iot") | list %}
+  {% if iot_sessions %}
+  <table>
+    <thead>
+      <tr>
+        <th>MAC</th><th>Label</th><th>Last IP</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in iot_sessions %}
+      <tr>
+        <td><code>{{ s.mac }}</code></td>
+        <td>{{ s.label }}</td>
+        <td>{{ s.ip }}</td>
+        <td>
+          <form method="post" action="/admin/devices" class="inline-form">
+            <input type="hidden" name="action" value="remove">
+            <input type="hidden" name="mac" value="{{ s.mac }}">
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Remove {{ s.label or s.mac }}?')">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="font-size:0.875rem;color:#9ca3af">No smart devices registered yet.</p>
+  {% endif %}
+
+  <hr class="divider">
+
+  <!-- Active guest sessions -->
+  <h2>Active Guest Sessions</h2>
+
+  {% set guest_sessions = sessions | rejectattr("is_iot") | list %}
+  {% if guest_sessions %}
+  <table>
+    <thead>
+      <tr>
+        <th>MAC</th><th>IP</th><th>Expires</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in guest_sessions %}
+      <tr>
+        <td><code>{{ s.mac }}</code></td>
+        <td>{{ s.ip }}</td>
+        <td>{{ s.expires }}</td>
+        <td>
+          <form method="post" action="/admin/revoke" class="inline-form">
+            <input type="hidden" name="mac" value="{{ s.mac }}">
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Disconnect {{ s.mac }}?')">Revoke</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="font-size:0.875rem;color:#9ca3af">No guests connected.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

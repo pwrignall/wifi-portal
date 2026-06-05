@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin Login{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>Admin</h1>
+  <p>Sign in to manage the guest network.</p>
+
+  {% if error %}
+  <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post">
+    <input
+      type="password"
+      name="password"
+      placeholder="Admin password"
+      autofocus
+      required
+    >
+    <button type="submit" class="btn btn-primary">Sign in</button>
+  </form>
+</div>
+{% endblock %}

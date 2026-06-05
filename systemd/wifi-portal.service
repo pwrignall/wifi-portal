@@ -1,0 +1,30 @@
+[Unit]
+Description=WiFi Captive Portal
+After=network.target hostapd.service dnsmasq.service
+Requires=hostapd.service dnsmasq.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/wifi-portal
+
+# Load interface/subnet variables from the env file so iptables.sh knows
+# what to configure without hardcoding values in this unit file.
+EnvironmentFile=/etc/wifi-portal/iptables.env
+Environment="WIFI_PORTAL_SETTINGS=/etc/wifi-portal/settings.ini"
+Environment="WIFI_PORTAL_DB=/var/lib/wifi-portal/portal.db"
+Environment="APP_DIR=/opt/wifi-portal"
+
+# Set up firewall rules before starting the app
+ExecStartPre=/opt/wifi-portal/scripts/iptables.sh
+
+ExecStart=uv run --project /opt/wifi-portal python3 /opt/wifi-portal/app.py
+
+Restart=on-failure
+RestartSec=5
+
+# The app runs as root so it can manage iptables rules.
+# A future improvement would be to split firewall management into a
+# privileged helper and run the Flask app as an unprivileged user.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Connect to {{ ssid }}{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>Welcome</h1>
+  <span class="ssid">{{ ssid }}</span>
+
+  <p>Enter the guest password to access the internet. Ask your host if you don't have it.</p>
+
+  {% if error %}
+  <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/login">
+    <input
+      type="text"
+      name="password"
+      placeholder="e.g. OCEAN-TIGER-42"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="characters"
+      spellcheck="false"
+      autofocus
+      required
+    >
+    <button type="submit" class="btn btn-primary">Connect</button>
+  </form>
+</div>
+{% endblock %}
