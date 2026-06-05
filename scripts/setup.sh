@@ -209,7 +209,12 @@ info "Generating settings..."
 mkdir -p "$SETTINGS_DIR" "$DATA_DIR"
 
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-ADMIN_HASH=$(python3 -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('${ADMIN_PW}'))")
+# Use the uv venv (werkzeug is there); pass password via env var to handle special characters safely.
+ADMIN_HASH=$(cd "$APP_DEST" && _PW="$ADMIN_PW" uv run python3 -c "
+import os
+from werkzeug.security import generate_password_hash
+print(generate_password_hash(os.environ['_PW']))
+")
 INITIAL_PW=$(python3 -c "
 import random
 WORDS=['AMBER','BEACH','BRAVE','CEDAR','CHESS','CLOUD','CORAL','CRANE',
