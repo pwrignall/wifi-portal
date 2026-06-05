@@ -169,13 +169,21 @@ beacon_int=100
 dtim_period=2
 EOF
 
-# Point hostapd at the config file
-if grep -q "^#DAEMON_CONF" /etc/default/hostapd 2>/dev/null; then
-    sed -i 's|^#DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
-else
-    echo 'DAEMON_CONF="/etc/hostapd/hostapd.conf"' >> /etc/default/hostapd
-fi
-ok "hostapd configured."
+# Use a systemd drop-in to pin the config path explicitly.
+# This avoids /etc/default/hostapd entirely — on Bookworm that file ships
+# with DAEMON_CONF="" already uncommented, so any sed/append approach
+# produces duplicate entries and the wrong value may win.
+mkdir -p /etc/systemd/system/hostapd.service.d
+cat > /etc/systemd/system/hostapd.service.d/wifi-portal.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/sbin/hostapd /etc/hostapd/hostapd.conf
+EOF
+systemctl daemon-reload
+
+# Confirm what was actually written
+grep "^ssid=" /etc/hostapd/hostapd.conf
+ok "hostapd configured (SSID: $SSID)."
 
 # ---------------------------------------------------------------------------
 # 5. Configure dnsmasq
