@@ -122,6 +122,9 @@ if systemctl is-active --quiet NetworkManager 2>/dev/null; then
 unmanaged-devices=interface-name:$WLAN_IF
 EOF
     systemctl reload NetworkManager
+    # Immediately release the interface — reload is async and NM may still
+    # hold wlan0 by the time hostapd tries to claim it.
+    nmcli device set "$WLAN_IF" managed no 2>/dev/null || true
     ok "NetworkManager told to ignore $WLAN_IF."
 
 elif [ -f /etc/dhcpcd.conf ]; then
@@ -243,21 +246,10 @@ import os
 from werkzeug.security import generate_password_hash
 print(generate_password_hash(os.environ['_PW']))
 ")
-INITIAL_PW=$(python3 -c "
-import random
-WORDS=['AMBER','BEACH','BRAVE','CEDAR','CHESS','CLOUD','CORAL','CRANE',
-       'DELTA','EAGLE','EMBER','FLAME','FROST','GLOBE','GRACE','GROVE',
-       'HAVEN','HONEY','IVORY','JADE','JEWEL','KARMA','LASER','LEMON',
-       'LIGHT','LOTUS','MAPLE','METRO','MIST','NOBLE','NORTH','OCEAN',
-       'OLIVE','OPERA','ORBIT','PETAL','PIANO','PIXEL','PLAZA','PRISM',
-       'QUEST','QUINN','RADAR','RAPID','RAVEN','RIDGE','RIVER','ROBIN',
-       'ROWAN','RUBY','RUSTY','SOLAR','SOLID','SONIC','SPARK','STORM',
-       'SUNNY','SWIFT','TIGER','TITAN','TOKEN','TOWER','ULTRA','UNITY',
-       'URBAN','VENUS','VIBES','VIOLA','VISTA','VIVID','WATER','WAVES',
-       'WINDY','WITCH','YACHT','ZEBRA']
-w1,w2=random.sample(WORDS,2)
-print(f'{w1}-{w2}-{random.randint(10,99)}')
-")
+# App is already installed — reuse its generate_guest_password() so the
+# initial password respects words.csv and matches the rotation format.
+INITIAL_PW=$(cd "$APP_DEST" && uv run python3 -c \
+    "from app import generate_guest_password; print(generate_guest_password())")
 
 cat > "$SETTINGS_DIR/settings.ini" <<EOF
 [app]
@@ -309,6 +301,8 @@ ok "Systemd services installed."
 # 11. Start everything
 # ---------------------------------------------------------------------------
 info "Starting services..."
+# Unblock the WiFi radio in case a soft rfkill was left after teardown.
+rfkill unblock wifi 2>/dev/null || true
 systemctl start hostapd
 systemctl start dnsmasq
 systemctl start wifi-portal
