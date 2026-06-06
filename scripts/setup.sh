@@ -59,6 +59,7 @@ GUEST_GW=$(ask        "Pi's IP on the guest network (gateway)"    "192.168.100.1
 DHCP_START=$(ask      "DHCP pool start"                           "192.168.100.100")
 DHCP_END=$(ask        "DHCP pool end"                             "192.168.100.200")
 HOME_SUBNET=$(ask     "Your home LAN subnet (blocked from guests)" "192.168.1.0/24")
+DNS_SERVERS=$(ask     "Upstream DNS server(s) for guests (space-separated, e.g. a pi-hole IP)" "8.8.8.8 1.1.1.1")
 WLAN_IF=$(ask         "Guest WiFi interface"                      "wlan0")
 ETH_IF=$(ask          "Ethernet interface (internet source)"       "eth0")
 
@@ -78,6 +79,7 @@ echo "  SSID:         $SSID"
 echo "  Country:      $COUNTRY / Channel: $CHANNEL"
 echo "  Guest subnet: $GUEST_SUBNET (gateway: $GUEST_GW)"
 echo "  Home subnet:  $HOME_SUBNET (blocked from guests)"
+echo "  DNS servers:  $DNS_SERVERS"
 echo "  Interfaces:   $WLAN_IF (WiFi AP) / $ETH_IF (internet)"
 read -rp "Continue? [y/N]: " confirm
 [[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 0; }
@@ -195,15 +197,20 @@ ok "hostapd configured (SSID: $SSID)."
 info "Configuring dnsmasq..."
 cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup 2>/dev/null || true
 
+# One "server=" line per upstream DNS server (e.g. a pi-hole) the guest
+# network's DNS queries get forwarded to after hitting the Pi.
+DNS_SERVER_LINES=""
+for dns in $DNS_SERVERS; do
+    DNS_SERVER_LINES+="server=${dns}"$'\n'
+done
+
 cat > /etc/dnsmasq.conf <<EOF
 interface=$WLAN_IF
 bind-interfaces
 dhcp-range=${DHCP_START},${DHCP_END},255.255.255.0,24h
 dhcp-option=3,${GUEST_GW}
 dhcp-option=6,${GUEST_GW}
-server=8.8.8.8
-server=1.1.1.1
-no-hosts
+${DNS_SERVER_LINES}no-hosts
 no-resolv
 log-dhcp
 EOF
