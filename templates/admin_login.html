@@ -1,23 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Admin Login{% endblock %}
 {% block body %}
-<div class="card">
-  <h1>Admin</h1>
-  <p>Sign in to manage the guest network.</p>
+<div class="window">
+  <div class="title-bar">
+    <span>&#128274; Network Administration - Access Required</span>
+    <div class="title-btns">
+      <span class="tbtn">_</span>
+      <span class="tbtn">&#9633;</span>
+      <span class="tbtn">&#10005;</span>
+    </div>
+  </div>
+  <div class="window-body">
+    <div style="text-align:center;margin-bottom:10px">
+      <div style="font-size:2rem;margin-bottom:4px">&#128274;</div>
+      <h1>NETWORK ADMINISTRATION SYSTEM</h1>
+      <p style="font-size:11px;color:#800000;font-weight:bold;font-family:Arial,sans-serif;margin-bottom:0">
+        &#9888; AUTHORIZED PERSONNEL ONLY &#9888;
+      </p>
+    </div>
 
-  {% if error %}
-  <div class="error">{{ error }}</div>
-  {% endif %}
+    <p>Enter the admin password to access the management console.</p>
 
-  <form method="post">
-    <input
-      type="password"
-      name="password"
-      placeholder="Admin password"
-      autofocus
-      required
-    >
-    <button type="submit" class="btn btn-primary">Sign in</button>
-  </form>
+    {% if error %}
+    <div class="error">&#9888; ACCESS DENIED: {{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      <label style="font-size:12px;font-family:Arial,sans-serif;display:block;margin-bottom:3px;font-weight:bold">
+        Password:
+      </label>
+      <input type="password" name="password" autofocus required>
+      <div style="text-align:center;margin-top:6px">
+        <button type="submit" class="btn btn-primary">Log On</button>
+        &nbsp;&nbsp;
+        <button type="button" class="btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+  <div class="status-bar">
+    <span class="status-panel">Waiting for authorization...</span>
+    <span class="status-panel">&#127968; Intranet</span>
+  </div>
 </div>
 {% endblock %}

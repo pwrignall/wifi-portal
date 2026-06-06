@@ -1,116 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Admin — {{ ssid }}{% endblock %}
+{% block title %}Admin &#8212; {{ ssid }}{% endblock %}
 {% block body %}
-<div class="card card-wide">
-
-  <nav>
-    <h1>Admin — {{ ssid }}</h1>
-    <a href="/admin/logout" class="btn btn-outline btn-sm">Sign out</a>
-  </nav>
-
-  <!-- Current guest password -->
-  <h2>Guest Password</h2>
-  <div class="password-display">{{ password }}</div>
-  <p class="meta">Last rotated: {{ rotated }} &nbsp;·&nbsp; Rotates automatically on the 1st of each month</p>
-
-  {% if qr_available %}
-  <p style="margin-bottom:0.5rem;font-size:0.875rem;color:#555">
-    QR code encodes the password above — show or share it so guests can scan and type it in.
-  </p>
-  <img src="/admin/qr.png" alt="Password QR code"
-       style="width:160px;height:160px;border-radius:8px;display:block;margin-bottom:1rem">
-  {% endif %}
-
-  <form method="post" action="/admin/rotate"
-        onsubmit="return confirm('Rotate the password now? All current guest sessions will be disconnected.')">
-    <button type="submit" class="btn btn-danger btn-sm">Rotate password now</button>
-  </form>
-
-  <hr class="divider">
-
-  <!-- Add IoT device -->
-  <h2>Smart Devices (IoT bypass)</h2>
-  <p style="font-size:0.875rem">
-    Devices registered here skip the captive portal entirely — they connect and get internet
-    access immediately. Find a device's MAC address in its network settings or your router's
-    DHCP table.
-  </p>
-
-  <form method="post" action="/admin/devices" style="margin-bottom:1.25rem">
-    <input type="hidden" name="action" value="add">
-    <div class="row" style="margin-bottom:0.5rem">
-      <input type="text" name="mac" placeholder="MAC — e.g. AA:BB:CC:DD:EE:FF"
-             pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" required
-             title="Enter a valid MAC address (AA:BB:CC:DD:EE:FF)">
-      <input type="text" name="label" placeholder="Label — e.g. Smart TV">
-      <input type="text" name="ip" placeholder="IP (optional)">
+<div class="window window-wide">
+  <div class="title-bar">
+    <span>&#9881; Network Administration Console v2.0 &#8212; {{ ssid }}</span>
+    <div class="title-btns">
+      <span class="tbtn">_</span>
+      <span class="tbtn">&#9633;</span>
+      <span class="tbtn">&#10005;</span>
     </div>
-    <button type="submit" class="btn btn-primary btn-sm" style="width:auto">Add device</button>
-  </form>
+  </div>
+  <div class="menu-bar" style="display:flex;justify-content:space-between;align-items:center">
+    <span>
+      <span class="menu-item">File</span>
+      <span class="menu-item">View</span>
+      <span class="menu-item">Tools</span>
+      <span class="menu-item">Help</span>
+    </span>
+    <a href="/admin/logout" class="btn btn-sm" style="text-decoration:none">Sign out</a>
+  </div>
+  <div class="window-body">
 
-  {% set iot_sessions = sessions | selectattr("is_iot") | list %}
-  {% if iot_sessions %}
-  <table>
-    <thead>
-      <tr>
-        <th>MAC</th><th>Label</th><th>Last IP</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in iot_sessions %}
-      <tr>
-        <td><code>{{ s.mac }}</code></td>
-        <td>{{ s.label }}</td>
-        <td>{{ s.ip }}</td>
-        <td>
-          <form method="post" action="/admin/devices" class="inline-form">
-            <input type="hidden" name="action" value="remove">
-            <input type="hidden" name="mac" value="{{ s.mac }}">
-            <button type="submit" class="btn btn-danger btn-sm"
-                    onclick="return confirm('Remove {{ s.label or s.mac }}?')">Remove</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p style="font-size:0.875rem;color:#9ca3af">No smart devices registered yet.</p>
-  {% endif %}
+    <!-- Guest Password -->
+    <h2>&#128273; Guest Password</h2>
+    <div class="password-display">{{ password }}</div>
+    <p class="meta">Last rotated: {{ rotated }} &nbsp;&#183;&nbsp; Auto-rotates on the 1st of each month</p>
 
-  <hr class="divider">
+    {% if qr_available %}
+    <p style="font-size:11px;color:#555;font-family:Arial,sans-serif;margin-bottom:4px">
+      QR code encodes the password &#8212; show or share it so guests can scan and type it in.
+    </p>
+    <img src="/admin/qr.png" alt="Password QR code"
+         style="width:140px;height:140px;border-top:2px solid #808080;border-left:2px solid #808080;border-right:2px solid #fff;border-bottom:2px solid #fff;display:block;margin-bottom:8px">
+    {% endif %}
 
-  <!-- Active guest sessions -->
-  <h2>Active Guest Sessions</h2>
+    <form method="post" action="/admin/rotate"
+          onsubmit="return confirm('Rotate the password now? All current guest sessions will be disconnected.')">
+      <button type="submit" class="btn btn-danger btn-sm">&#9888; Rotate Password Now</button>
+    </form>
 
-  {% set guest_sessions = sessions | rejectattr("is_iot") | list %}
-  {% if guest_sessions %}
-  <table>
-    <thead>
-      <tr>
-        <th>MAC</th><th>IP</th><th>Expires</th><th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in guest_sessions %}
-      <tr>
-        <td><code>{{ s.mac }}</code></td>
-        <td>{{ s.ip }}</td>
-        <td>{{ s.expires }}</td>
-        <td>
-          <form method="post" action="/admin/revoke" class="inline-form">
-            <input type="hidden" name="mac" value="{{ s.mac }}">
-            <button type="submit" class="btn btn-danger btn-sm"
-                    onclick="return confirm('Disconnect {{ s.mac }}?')">Revoke</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p style="font-size:0.875rem;color:#9ca3af">No guests connected.</p>
-  {% endif %}
+    <hr class="divider">
 
+    <!-- IoT Devices -->
+    <h2>&#128225; Smart Devices (IoT bypass)</h2>
+    <p style="font-size:11px;font-family:Arial,sans-serif">
+      Devices registered here skip the captive portal entirely and connect directly.
+      Find a device&#39;s MAC address in its network settings or your router&#39;s DHCP table.
+    </p>
+
+    <form method="post" action="/admin/devices" style="margin-bottom:10px">
+      <input type="hidden" name="action" value="add">
+      <div class="row" style="margin-bottom:4px">
+        <input type="text" name="mac" placeholder="MAC &#8212; e.g. AA:BB:CC:DD:EE:FF"
+               pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" required
+               title="Enter a valid MAC address (AA:BB:CC:DD:EE:FF)" style="min-width:190px">
+        <input type="text" name="label" placeholder="Label &#8212; e.g. Smart TV">
+        <input type="text" name="ip" placeholder="IP (optional)">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Add Device</button>
+    </form>
+
+    {% set iot_sessions = sessions | selectattr("is_iot") | list %}
+    {% if iot_sessions %}
+    <table>
+      <thead>
+        <tr>
+          <th>MAC Address</th><th>Label</th><th>Last IP</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in iot_sessions %}
+        <tr>
+          <td><code>{{ s.mac }}</code></td>
+          <td>{{ s.label }}</td>
+          <td>{{ s.ip }}</td>
+          <td>
+            <form method="post" action="/admin/devices" class="inline-form">
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="mac" value="{{ s.mac }}">
+              <button type="submit" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Remove {{ s.label or s.mac }}?')">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:11px;color:#808080;font-family:Arial,sans-serif;font-style:italic">
+      No smart devices registered yet.
+    </p>
+    {% endif %}
+
+    <hr class="divider">
+
+    <!-- Active Sessions -->
+    <h2>&#128101; Active Guest Sessions</h2>
+
+    {% set guest_sessions = sessions | rejectattr("is_iot") | list %}
+    {% if guest_sessions %}
+    <table>
+      <thead>
+        <tr>
+          <th>MAC Address</th><th>IP</th><th>Expires</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in guest_sessions %}
+        <tr>
+          <td><code>{{ s.mac }}</code></td>
+          <td>{{ s.ip }}</td>
+          <td>{{ s.expires }}</td>
+          <td>
+            <form method="post" action="/admin/revoke" class="inline-form">
+              <input type="hidden" name="mac" value="{{ s.mac }}">
+              <button type="submit" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Disconnect {{ s.mac }}?')">Revoke</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:11px;color:#808080;font-family:Arial,sans-serif;font-style:italic">
+      No guests currently connected.
+    </p>
+    {% endif %}
+
+  </div>
+  <div class="status-bar">
+    <span class="status-panel">Administration Console Ready</span>
+    <span class="status-panel">&#127968; Intranet</span>
+    <span class="status-panel">&#128274;</span>
+  </div>
 </div>
 {% endblock %}

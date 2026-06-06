@@ -1,29 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Connect to {{ ssid }}{% endblock %}
 {% block body %}
-<div class="card">
-  <h1>Welcome</h1>
-  <span class="ssid">{{ ssid }}</span>
+<div class="window">
+  <div class="title-bar">
+    <span>&#127760; Connect to {{ ssid }} - Microsoft Internet Explorer</span>
+    <div class="title-btns">
+      <span class="tbtn">_</span>
+      <span class="tbtn">&#9633;</span>
+      <span class="tbtn">&#10005;</span>
+    </div>
+  </div>
+  <div class="menu-bar">
+    <span class="menu-item">File</span>
+    <span class="menu-item">Edit</span>
+    <span class="menu-item">View</span>
+    <span class="menu-item">Favorites</span>
+    <span class="menu-item">Tools</span>
+    <span class="menu-item">Help</span>
+  </div>
+  <div class="window-body">
+    <div style="text-align:center;margin-bottom:10px">
+      <div style="font-size:1.6rem">&#9733; &#9733; &#9733;</div>
+      <h1 style="font-family:'Comic Sans MS',cursive;font-size:17px;color:#000080">
+        WELCOME TO THE WIFI PORTAL!!!
+      </h1>
+      <p style="font-family:'Comic Sans MS',cursive;color:#006400;font-weight:bold;margin-bottom:4px">
+        You are connecting to network:
+      </p>
+      <span class="ssid">{{ ssid }}</span>
+    </div>
 
-  <p>Enter the guest password to access the internet. Ask your host if you don't have it.</p>
+    <p>Please enter the <strong>SECRET ACCESS CODE</strong> below to gain entry
+    to the <em>Information Superhighway</em>!!! Ask your host if you don&#39;t have it.</p>
 
-  {% if error %}
-  <div class="error">{{ error }}</div>
-  {% endif %}
+    {% if error %}
+    <div class="error">&#9888; ERROR: {{ error }}</div>
+    {% endif %}
 
-  <form method="post" action="/login">
-    <input
-      type="text"
-      name="password"
-      placeholder="e.g. OCEAN-TIGER-42"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="characters"
-      spellcheck="false"
-      autofocus
-      required
-    >
-    <button type="submit" class="btn btn-primary">Connect</button>
-  </form>
+    <form method="post" action="/login">
+      <label style="font-size:12px;font-family:Arial,sans-serif;display:block;margin-bottom:3px;font-weight:bold">
+        Password:
+      </label>
+      <input
+        type="text"
+        name="password"
+        placeholder="e.g. OCEAN-TIGER-42"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        autofocus
+        required
+      >
+      <div style="text-align:center;margin-top:6px">
+        <button type="submit" class="btn btn-primary">OK</button>
+        &nbsp;&nbsp;
+        <button type="button" class="btn" onclick="history.back()">Cancel</button>
+      </div>
+    </form>
+
+    <p style="font-size:10px;color:#808080;font-family:Arial,sans-serif;text-align:center;margin-top:10px">
+      <span class="blink">&#9733;</span>
+      This page is UNDER CONSTRUCTION. Please check back soon!!!
+      <span class="blink">&#9733;</span>
+    </p>
+  </div>
+  <div class="status-bar">
+    <span class="status-panel">Done</span>
+    <span class="status-panel">Internet</span>
+  </div>
 </div>
 {% endblock %}

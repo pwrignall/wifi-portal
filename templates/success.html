@@ -1,10 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Connected — {{ ssid }}{% endblock %}
+{% block title %}Connected! - {{ ssid }}{% endblock %}
 {% block body %}
-<div class="card" style="text-align:center">
-  <span class="success-icon">&#10003;</span>
-  <h1>You're connected</h1>
-  <span class="ssid">{{ ssid }}</span>
-  <p style="margin-top:0.75rem">You now have internet access. Enjoy your visit!</p>
+<div class="window">
+  <div class="title-bar">
+    <span>&#127760; You Are Now Online!!! - Microsoft Internet Explorer</span>
+    <div class="title-btns">
+      <span class="tbtn">_</span>
+      <span class="tbtn">&#9633;</span>
+      <span class="tbtn">&#10005;</span>
+    </div>
+  </div>
+  <div class="window-body" style="text-align:center">
+    <div style="font-size:2.2rem;margin-bottom:6px">&#9733; &#10003; &#9733;</div>
+    <h1 style="font-family:'Comic Sans MS',cursive;font-size:18px;color:#006400">
+      *** YOU ARE NOW CONNECTED!!! ***
+    </h1>
+    <span class="ssid">{{ ssid }}</span>
+    <p style="margin-top:10px;font-family:'Comic Sans MS',cursive;color:#000080;font-weight:bold;font-size:13px">
+      Welcome to the WORLD WIDE WEB!!!
+    </p>
+    <p>You now have internet access. Enjoy your visit!!!</p>
+    <p style="font-size:10px;color:#808080;font-family:Arial,sans-serif;font-style:italic;margin-top:12px">
+      [This page has performed 0 illegal operations.
+      That&#39;s pretty good for the internet!!!]
+    </p>
+  </div>
+  <div class="status-bar">
+    <span class="status-panel">Done</span>
+    <span class="status-panel">Internet</span>
+  </div>
 </div>
 {% endblock %}
