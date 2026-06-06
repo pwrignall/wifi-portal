@@ -38,13 +38,14 @@
     {% endif %}
 
     <form method="post" action="/login">
+      {% if original_url %}<input type="hidden" name="next_url" value="{{ original_url }}">{% endif %}
       <label style="font-size:12px;font-family:Arial,sans-serif;display:block;margin-bottom:3px;font-weight:bold">
         Password:
       </label>
       <input
         type="text"
         name="password"
-        placeholder="e.g. OCEAN-TIGER-42"
+        placeholder=""
         autocomplete="off"
         autocorrect="off"
         autocapitalize="none"

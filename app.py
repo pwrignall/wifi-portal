@@ -319,7 +319,20 @@ def portal(path):
     mac = get_client_mac(client_ip)
     if mac and is_authenticated(mac):
         return redirect(url_for("success"))
-    return render_template("portal.html", ssid=SSID)
+
+    # Capture the URL the device was actually trying to reach.
+    # iptables rewrites the destination to us; the Host header keeps the
+    # original hostname.  After login we redirect there so the OS captive-
+    # portal detector (e.g. Android's generate_204 check) sees the real
+    # server response and dismisses the captive-portal webview cleanly.
+    host = request.headers.get("Host", "")
+    original_url = ""
+    if host and host != request.host:
+        original_url = f"http://{host}/{path}"
+        if request.query_string:
+            original_url += f"?{request.query_string.decode()}"
+
+    return render_template("portal.html", ssid=SSID, original_url=original_url)
 
 
 @app.route("/login", methods=["POST"])
@@ -364,6 +377,15 @@ def login():
         ), 500
 
     authenticate_client(mac, client_ip)
+
+    # Redirect to the original URL if it was an external host (not our portal).
+    # This lets the OS captive-portal detector receive the real server response
+    # (e.g. Google's 204) and close the webview without any flash.
+    next_url = request.form.get("next_url", "").strip()
+    if (next_url
+            and next_url.startswith("http://")
+            and not next_url.startswith(f"http://{request.host}")):
+        return redirect(next_url)
     return redirect(url_for("success"))
 
 

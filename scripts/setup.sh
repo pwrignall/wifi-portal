@@ -226,6 +226,7 @@ info "Installing app to $APP_DEST..."
 mkdir -p "$APP_DEST"
 cp -r "$APP_SRC"/app.py "$APP_SRC"/firewall.py "$APP_SRC"/templates \
        "$APP_SRC"/requirements.txt "$APP_SRC"/pyproject.toml "$APP_DEST"/
+[ -f "$APP_SRC/words.csv" ] && cp "$APP_SRC/words.csv" "$APP_DEST/words.csv"
 cp -r "$APP_SRC"/scripts "$APP_DEST"/scripts
 chmod +x "$APP_DEST"/scripts/*.sh
 

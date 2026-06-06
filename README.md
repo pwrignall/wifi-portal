@@ -17,9 +17,9 @@ internet access while keeping them completely separate from your home LAN.
                                                     └─────────┘
 ```
 
-**Guests** connect to the open `HomeGuest` SSID. Their browser is intercepted
+**Guests** connect to the open `HomeGuest` (or chosen name) SSID. Their browser is intercepted
 and they are shown a portal page where they enter a password. The password is
-human-friendly (e.g. `OCEAN-TIGER-42`) and rotates automatically on the 1st of
+human-friendly (e.g. `ocean tiger 42`) and rotates automatically on the 1st of
 every month. You see the current password and a QR code of it in the admin
 dashboard.
 
@@ -65,16 +65,16 @@ sudo bash scripts/setup.sh
 
 The script will ask you for:
 
-| Prompt | Example | Notes |
-|--------|---------|-------|
-| Guest SSID | `HomeGuest` | What guests see in their WiFi list |
-| Country code | `GB` | Your [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) country code |
-| WiFi channel | `6` | Use 1, 6, or 11 to avoid overlap |
-| Guest subnet | `192.168.100.0/24` | The new isolated network |
-| Gateway IP | `192.168.100.1` | Pi's IP on the guest network |
-| DHCP pool | `192.168.100.100` → `192.168.100.200` | |
-| Home LAN subnet | `192.168.1.0/24` | Blocked from guests |
-| Admin password | *(your choice)* | For the management dashboard |
+| Prompt          | Example                               | Notes                                                                                    |
+| --------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Guest SSID      | `HomeGuest`                           | What guests see in their WiFi list                                                       |
+| Country code    | `GB`                                  | Your [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) country code |
+| WiFi channel    | `6`                                   | Use 1, 6, or 11 to avoid overlap                                                         |
+| Guest subnet    | `192.168.100.0/24`                    | The new isolated network                                                                 |
+| Gateway IP      | `192.168.100.1`                       | Pi's IP on the guest network                                                             |
+| DHCP pool       | `192.168.100.100` → `192.168.100.200` |                                                                                          |
+| Home LAN subnet | `192.168.1.0/24`                      | Blocked from guests                                                                      |
+| Admin password  | _(your choice)_                       | For the management dashboard                                                             |
 
 The script handles both **Raspberry Pi OS Bookworm** (NetworkManager) and
 **Bullseye and earlier** (dhcpcd) automatically when configuring the static IP
@@ -83,10 +83,10 @@ for `wlan0`.
 Setup installs the app to `/opt/wifi-portal`, writes config to
 `/etc/wifi-portal/settings.ini`, and starts three systemd units:
 
-| Unit | Purpose |
-|------|---------|
-| `wifi-portal.service` | Flask portal app (sets up iptables on start) |
-| `rotate-password.timer` | Fires on the 1st of each month |
+| Unit                      | Purpose                                        |
+| ------------------------- | ---------------------------------------------- |
+| `wifi-portal.service`     | Flask portal app (sets up iptables on start)   |
+| `rotate-password.timer`   | Fires on the 1st of each month                 |
 | `rotate-password.service` | Generates new password, expires guest sessions |
 
 ---
@@ -133,7 +133,7 @@ Sign in with the admin password you set during setup. The dashboard shows:
 
 1. Guest sees `HomeGuest` in their WiFi list and connects (no WiFi password)
 2. Their phone/laptop opens a mini-browser automatically (iOS WebSheet / Android captive portal check)
-3. They see: *"Enter the guest password to access the internet"*
+3. They see: _"Enter the guest password to access the internet"_
 4. They type the password you share with them (e.g. from the admin QR code)
 5. They see a ✓ "You're connected" page and can browse normally
 6. Their session lasts 24 hours; after that they need to re-enter the password
