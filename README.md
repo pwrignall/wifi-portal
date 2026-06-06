@@ -76,6 +76,10 @@ The script will ask you for:
 | Home LAN subnet | `192.168.1.0/24` | Blocked from guests |
 | Admin password | *(your choice)* | For the management dashboard |
 
+The script handles both **Raspberry Pi OS Bookworm** (NetworkManager) and
+**Bullseye and earlier** (dhcpcd) automatically when configuring the static IP
+for `wlan0`.
+
 Setup installs the app to `/opt/wifi-portal`, writes config to
 `/etc/wifi-portal/settings.ini`, and starts three systemd units:
 
@@ -84,6 +88,22 @@ Setup installs the app to `/opt/wifi-portal`, writes config to
 | `wifi-portal.service` | Flask portal app (sets up iptables on start) |
 | `rotate-password.timer` | Fires on the 1st of each month |
 | `rotate-password.service` | Generates new password, expires guest sessions |
+
+---
+
+## Starting fresh / uninstalling
+
+```bash
+sudo bash scripts/teardown.sh
+```
+
+Reverses `setup.sh` completely: stops and disables all services, flushes
+iptables and resets policies to ACCEPT, removes the app and all config/data,
+restores NetworkManager or dhcpcd management of `wlan0`, and re-enables
+`wpa_supplicant`. System packages (`hostapd`, `dnsmasq`, `iptables`) are left
+installed — remove them manually if wanted.
+
+After teardown you can re-run `setup.sh` for a clean install.
 
 ---
 
@@ -138,6 +158,21 @@ To rotate manually (e.g. after a security concern):
 sudo systemctl start rotate-password.service
 # or via the admin dashboard "Rotate now" button
 ```
+
+### Custom word list
+
+Passwords are drawn from a built-in word list by default. To use your own
+words, create `/opt/wifi-portal/words.csv` with one word per line:
+
+```
+CASTLE
+RIVER
+FALCON
+...
+```
+
+The file is read at rotation time. If it is absent or empty the built-in list
+is used as a fallback.
 
 ---
 
@@ -206,6 +241,8 @@ sudo systemctl restart wifi-portal
     iptables.sh             Firewall initialisation (run at service start)
     rotate-password.sh      Monthly password rotation
     setup.sh                First-time installer
+    teardown.sh             Removes the portal and restores the system
+  words.csv                 (optional) Custom word list for password generation
 
 /etc/wifi-portal/
   settings.ini              Admin password hash, guest password, network config
@@ -215,7 +252,16 @@ sudo systemctl restart wifi-portal
   portal.db                 SQLite database (sessions, failed login tracking)
 
 /etc/hostapd/hostapd.conf   Access point config
+/etc/systemd/system/
+  hostapd.service.d/
+    wifi-portal.conf        Drop-in that pins hostapd to the correct config path
+  wifi-portal.service
+  rotate-password.service
+  rotate-password.timer
+
 /etc/dnsmasq.conf           DHCP/DNS config
+/etc/NetworkManager/conf.d/
+  wifi-portal.conf          (Bookworm only) Marks wlan0 as unmanaged by NM
 ```
 
 ---
