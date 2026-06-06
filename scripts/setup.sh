@@ -179,6 +179,7 @@ EOF
 mkdir -p /etc/systemd/system/hostapd.service.d
 cat > /etc/systemd/system/hostapd.service.d/wifi-portal.conf <<EOF
 [Service]
+Type=simple
 ExecStart=
 ExecStart=/usr/sbin/hostapd /etc/hostapd/hostapd.conf
 EOF
