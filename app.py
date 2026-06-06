@@ -117,25 +117,44 @@ def init_db() -> None:
 # Password management
 # ---------------------------------------------------------------------------
 
-_WORDS = [
-    "AMBER", "BEACH", "BRAVE", "CEDAR", "CHESS", "CLOUD", "CORAL", "CRANE",
-    "DELTA", "EAGLE", "EMBER", "FLAME", "FROST", "GLOBE", "GRACE", "GROVE",
-    "HAVEN", "HONEY", "IVORY", "JADE",  "JEWEL", "KARMA", "LASER", "LEMON",
-    "LIGHT", "LOTUS", "MAPLE", "METRO", "MIST",  "NOBLE", "NORTH", "OCEAN",
-    "OLIVE", "OPERA", "ORBIT", "PETAL", "PIANO", "PIXEL", "PLAZA", "PRISM",
-    "QUEST", "QUINN", "RADAR", "RAPID", "RAVEN", "RIDGE", "RIVER", "ROBIN",
-    "ROWAN", "RUBY",  "RUSTY", "SOLAR", "SOLID", "SONIC", "SPARK", "STORM",
-    "SUNNY", "SWIFT", "TIGER", "TITAN", "TOKEN", "TOWER", "ULTRA", "UNITY",
-    "URBAN", "VENUS", "VIBES", "VIOLA", "VISTA", "VIVID", "WATER", "WAVES",
-    "WINDY", "WITCH", "YACHT", "ZEBRA",
+_WORDS_FALLBACK = [
+    "amber", "beach", "brave", "cedar", "chess", "cloud", "coral", "crane",
+    "delta", "eagle", "ember", "flame", "frost", "globe", "grace", "grove",
+    "haven", "honey", "ivory", "jade",  "jewel", "karma", "laser", "lemon",
+    "light", "lotus", "maple", "metro", "mist",  "noble", "north", "ocean",
+    "olive", "opera", "orbit", "petal", "piano", "pixel", "plaza", "prism",
+    "quest", "quinn", "radar", "rapid", "raven", "ridge", "river", "robin",
+    "rowan", "ruby",  "rusty", "solar", "solid", "sonic", "spark", "storm",
+    "sunny", "swift", "tiger", "titan", "token", "tower", "ultra", "unity",
+    "urban", "venus", "vibes", "viola", "vista", "vivid", "water", "waves",
+    "windy", "witch", "yacht", "zebra",
 ]
+
+_WORDS_CSV = Path(__file__).parent / "words.csv"
+
+
+def _load_words() -> tuple:
+    """Return (word_list, from_csv). Reads words.csv if present."""
+    if _WORDS_CSV.exists():
+        words = []
+        with open(_WORDS_CSV) as f:
+            for line in f:
+                word = line.strip().strip('"').strip("'").lower()
+                if word and word.isalpha():
+                    words.append(word)
+        if len(words) >= 3:
+            return words, True
+    return _WORDS_FALLBACK, False
 
 
 def generate_guest_password() -> str:
-    """Return a memorable password like OCEAN-TIGER-42."""
-    w1, w2 = random.sample(_WORDS, 2)
+    words, from_csv = _load_words()
     n = random.randint(10, 99)
-    return f"{w1}-{w2}-{n}"
+    if from_csv:
+        w1, w2, w3 = random.sample(words, 3)
+        return f"{w1} {w2} {w3} {n}"
+    w1, w2 = random.sample(words, 2)
+    return f"{w1} {w2} {n}"
 
 
 def get_current_password() -> str:

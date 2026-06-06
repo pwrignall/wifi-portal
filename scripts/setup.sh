@@ -199,7 +199,6 @@ dhcp-option=3,${GUEST_GW}
 dhcp-option=6,${GUEST_GW}
 server=8.8.8.8
 server=1.1.1.1
-address=/#/${GUEST_GW}
 no-hosts
 no-resolv
 log-dhcp

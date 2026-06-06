@@ -12,23 +12,41 @@ APP_DIR="${APP_DIR:-/opt/wifi-portal}"
 
 echo "[rotate] Starting monthly password rotation..."
 
-# Use the same wordlist and logic as app.py so passwords look identical.
-NEW_PW=$(python3 - <<'PYEOF'
+# Mirror the logic in app.py: use words.csv if present, else fall back to
+# the built-in list. Same format rules apply.
+NEW_PW=$(python3 - "$APP_DIR" <<'PYEOF'
 import random, sys
-WORDS = [
-    "AMBER","BEACH","BRAVE","CEDAR","CHESS","CLOUD","CORAL","CRANE",
-    "DELTA","EAGLE","EMBER","FLAME","FROST","GLOBE","GRACE","GROVE",
-    "HAVEN","HONEY","IVORY","JADE","JEWEL","KARMA","LASER","LEMON",
-    "LIGHT","LOTUS","MAPLE","METRO","MIST","NOBLE","NORTH","OCEAN",
-    "OLIVE","OPERA","ORBIT","PETAL","PIANO","PIXEL","PLAZA","PRISM",
-    "QUEST","QUINN","RADAR","RAPID","RAVEN","RIDGE","RIVER","ROBIN",
-    "ROWAN","RUBY","RUSTY","SOLAR","SOLID","SONIC","SPARK","STORM",
-    "SUNNY","SWIFT","TIGER","TITAN","TOKEN","TOWER","ULTRA","UNITY",
-    "URBAN","VENUS","VIBES","VIOLA","VISTA","VIVID","WATER","WAVES",
-    "WINDY","WITCH","YACHT","ZEBRA",
+from pathlib import Path
+
+app_dir = Path(sys.argv[1])
+words_csv = app_dir / "words.csv"
+
+FALLBACK = [
+    "amber","beach","brave","cedar","chess","cloud","coral","crane",
+    "delta","eagle","ember","flame","frost","globe","grace","grove",
+    "haven","honey","ivory","jade","jewel","karma","laser","lemon",
+    "light","lotus","maple","metro","mist","noble","north","ocean",
+    "olive","opera","orbit","petal","piano","pixel","plaza","prism",
+    "quest","quinn","radar","rapid","raven","ridge","river","robin",
+    "rowan","ruby","rusty","solar","solid","sonic","spark","storm",
+    "sunny","swift","tiger","titan","token","tower","ultra","unity",
+    "urban","venus","vibes","viola","vista","vivid","water","waves",
+    "windy","witch","yacht","zebra",
 ]
-w1, w2 = random.sample(WORDS, 2)
-print(f"{w1}-{w2}-{random.randint(10, 99)}")
+
+if words_csv.exists():
+    words = [
+        line.strip().strip('"').strip("'").lower()
+        for line in words_csv.read_text().splitlines()
+        if line.strip().strip('"').strip("'").isalpha()
+    ]
+    if len(words) >= 3:
+        w1, w2, w3 = random.sample(words, 3)
+        print(f"{w1} {w2} {w3} {random.randint(10, 99)}")
+        sys.exit(0)
+
+w1, w2 = random.sample(FALLBACK, 2)
+print(f"{w1} {w2} {random.randint(10, 99)}")
 PYEOF
 )
 
