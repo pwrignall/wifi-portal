@@ -64,6 +64,17 @@ WLAN_IF=$(ask         "Guest WiFi interface"                      "wlan0")
 ETH_IF=$(ask          "Ethernet interface (internet source)"       "eth0")
 
 echo ""
+echo "Optional: allow guest devices to reach a single home LAN service"
+echo "(e.g. Jellyfin) without going through the captive portal."
+echo "Leave blank to disable."
+PINHOLE_HOST=$(ask    "Home service IP to allow through (blank = none)" "")
+if [[ -n "$PINHOLE_HOST" ]]; then
+    PINHOLE_PORT=$(ask "Port for that service" "8096")
+else
+    PINHOLE_PORT="8096"
+fi
+
+echo ""
 echo "Choose an admin password for the management dashboard."
 echo "This is separate from the rotating guest password."
 while true; do
@@ -81,6 +92,9 @@ echo "  Guest subnet: $GUEST_SUBNET (gateway: $GUEST_GW)"
 echo "  Home subnet:  $HOME_SUBNET (blocked from guests)"
 echo "  DNS servers:  $DNS_SERVERS"
 echo "  Interfaces:   $WLAN_IF (WiFi AP) / $ETH_IF (internet)"
+if [[ -n "$PINHOLE_HOST" ]]; then
+    echo "  Pinhole:      $PINHOLE_HOST:$PINHOLE_PORT (accessible from guest network)"
+fi
 read -rp "Continue? [y/N]: " confirm
 [[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 0; }
 
@@ -294,6 +308,8 @@ GUEST_SUBNET=$GUEST_SUBNET
 GUEST_GW=$GUEST_GW
 HOME_SUBNET=$HOME_SUBNET
 PORTAL_PORT=80
+PINHOLE_HOST=$PINHOLE_HOST
+PINHOLE_PORT=$PINHOLE_PORT
 EOF
 
 # ---------------------------------------------------------------------------
