@@ -11,6 +11,8 @@
 #   GUEST_GW      — Pi's IP on the guest network (default: 192.168.100.1)
 #   HOME_SUBNET   — your home LAN CIDR to block guests from (default: 192.168.1.0/24)
 #   PORTAL_PORT   — port the Flask app listens on (default: 80)
+#   PINHOLE_HOST  — IP of a home LAN service guests may reach (e.g. Jellyfin); unset = disabled
+#   PINHOLE_PORT  — TCP port for that service (default: 8096)
 
 set -euo pipefail
 
@@ -20,6 +22,8 @@ GUEST_SUBNET="${GUEST_SUBNET:-192.168.100.0/24}"
 GUEST_GW="${GUEST_GW:-192.168.100.1}"
 HOME_SUBNET="${HOME_SUBNET:-192.168.1.0/24}"
 PORTAL_PORT="${PORTAL_PORT:-80}"
+PINHOLE_HOST="${PINHOLE_HOST:-}"
+PINHOLE_PORT="${PINHOLE_PORT:-8096}"
 
 echo "[iptables] Setting up captive portal firewall rules..."
 echo "  Guest IF:    $WLAN_IF"
@@ -27,6 +31,9 @@ echo "  Internet IF: $ETH_IF"
 echo "  Guest net:   $GUEST_SUBNET (gateway: $GUEST_GW)"
 echo "  Home net:    $HOME_SUBNET (blocked from guests)"
 echo "  Portal port: $PORTAL_PORT"
+if [[ -n "$PINHOLE_HOST" ]]; then
+  echo "  Pinhole:     $PINHOLE_HOST:$PINHOLE_PORT (accessible from guest network)"
+fi
 
 # ---------------------------------------------------------------------------
 # Ensure the guest interface has its static IP.
@@ -84,13 +91,21 @@ iptables -A INPUT -i "$ETH_IF" -j ACCEPT
 # FORWARD — guest clients routing to the internet
 #
 # Custom chain GUEST_FORWARD keeps per-MAC rules tidy.
-#   Rule 1:    DROP  dst=HOME_SUBNET  (always — even authenticated clients)
-#   Rules 2-N: ACCEPT mac=<auth'd>   (injected by app.py via firewall.py)
-#   Last:      DROP                  (unauthenticated catch-all)
+#   Rule 0:    ACCEPT dst=PINHOLE_HOST:PINHOLE_PORT  (optional, set via env)
+#   Rule 1:    DROP   dst=HOME_SUBNET  (always — even authenticated clients)
+#   Rules 2-N: ACCEPT mac=<auth'd>    (injected by app.py via firewall.py)
+#   Last:      DROP                   (unauthenticated catch-all)
 # ---------------------------------------------------------------------------
 iptables -N GUEST_FORWARD
 
-# Rule 1: never let any guest reach the home LAN
+# Pinhole: allow guest access to a single home LAN host:port (e.g. Jellyfin) before the
+# blanket HOME_SUBNET drop. Any guest device can reach it without portal authentication,
+# which is intentional for IoT devices that won't go through the captive portal flow.
+if [[ -n "$PINHOLE_HOST" ]]; then
+  iptables -A GUEST_FORWARD -d "$PINHOLE_HOST" -p tcp --dport "$PINHOLE_PORT" -j ACCEPT
+fi
+
+# Never let any guest reach the rest of the home LAN
 iptables -A GUEST_FORWARD -d "$HOME_SUBNET" -j DROP
 
 # Last rule: drop everyone not explicitly allowed above
