@@ -36,3 +36,4 @@ __pycache__/
 .venv/
 uv.lock
 words.csv
+iot-devices.csv

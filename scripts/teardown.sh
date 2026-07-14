@@ -9,6 +9,7 @@
 
 set -euo pipefail
 
+APP_SRC="$(cd "$(dirname "$0")/.." && pwd)"
 APP_DEST="/opt/wifi-portal"
 SETTINGS_DIR="/etc/wifi-portal"
 DATA_DIR="/var/lib/wifi-portal"
@@ -24,6 +25,7 @@ echo "This will remove the WiFi captive portal and all associated configuration.
 echo "  Removes: /opt/wifi-portal, /etc/wifi-portal, /var/lib/wifi-portal"
 echo "  Removes: systemd services, hostapd config, dnsmasq config"
 echo "  Resets:  iptables to ACCEPT, NetworkManager/dhcpcd wlan0 management"
+echo "  Saves:   registered IoT device MACs to iot-devices.csv (restored on next setup.sh)"
 echo ""
 read -rp "Continue? [y/N]: " confirm
 [[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 0; }
@@ -137,6 +139,21 @@ ok "Removed $APP_DEST"
 info "Removing settings..."
 rm -rf "$SETTINGS_DIR"
 ok "Removed $SETTINGS_DIR"
+
+# Save registered IoT devices to the repo (outside the dirs we're about to
+# wipe) so setup.sh can restore them automatically on the next install.
+if [[ -f "$DATA_DIR/portal.db" ]] && command -v sqlite3 &>/dev/null; then
+    info "Saving registered IoT devices..."
+    sqlite3 -csv "$DATA_DIR/portal.db" \
+        "SELECT mac, label FROM sessions WHERE is_iot = 1;" \
+        > "$APP_SRC/iot-devices.csv.tmp" 2>/dev/null || true
+    if [[ -s "$APP_SRC/iot-devices.csv.tmp" ]]; then
+        mv "$APP_SRC/iot-devices.csv.tmp" "$APP_SRC/iot-devices.csv"
+        ok "Saved $(wc -l < "$APP_SRC/iot-devices.csv") device(s) to $APP_SRC/iot-devices.csv — setup.sh will restore them automatically."
+    else
+        rm -f "$APP_SRC/iot-devices.csv.tmp"
+    fi
+fi
 
 info "Removing data..."
 rm -rf "$DATA_DIR"

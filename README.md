@@ -103,6 +103,11 @@ restores NetworkManager or dhcpcd management of `wlan0`, and re-enables
 `wpa_supplicant`. System packages (`hostapd`, `dnsmasq`, `iptables`) are left
 installed — remove them manually if wanted.
 
+Before it deletes the database, it saves any registered IoT device MACs to
+`iot-devices.csv` in this repo (gitignored — it's local device data, not
+code). `setup.sh` automatically re-registers them from that file, so you
+don't need to re-add smart devices in the admin dashboard after a teardown.
+
 After teardown you can re-run `setup.sh` for a clean install.
 
 ---

@@ -129,6 +129,10 @@ systemctl unmask hostapd 2>/dev/null || true
 # ---------------------------------------------------------------------------
 info "Configuring $WLAN_IF static IP..."
 
+# Unblock the WiFi radio in case a soft rfkill is active (e.g. left over
+# from teardown, or set by default on first boot) before we touch the link.
+rfkill unblock wifi 2>/dev/null || true
+
 if systemctl is-active --quiet NetworkManager 2>/dev/null; then
     # Raspberry Pi OS Bookworm (and most modern systems): use NetworkManager.
     # Mark wlan0 as unmanaged so NM doesn't reassign or reset the address.
@@ -299,6 +303,37 @@ ok "Settings written to $SETTINGS_DIR/settings.ini"
 echo "  Initial guest password: $INITIAL_PW"
 
 # ---------------------------------------------------------------------------
+# 8b. Restore previously registered IoT devices, if teardown.sh saved any
+# ---------------------------------------------------------------------------
+if [[ -f "$APP_SRC/iot-devices.csv" ]]; then
+    info "Restoring IoT devices from $APP_SRC/iot-devices.csv..."
+    RESTORED=$(cd "$APP_DEST" && \
+        WIFI_PORTAL_SETTINGS="$SETTINGS_DIR/settings.ini" \
+        WIFI_PORTAL_DB="$DATA_DIR/portal.db" \
+        IOT_CSV="$APP_SRC/iot-devices.csv" \
+        uv run python3 -c "
+import csv, os
+from app import app, init_db, authenticate_client, _MAC_RE
+
+init_db()
+n = 0
+with open(os.environ['IOT_CSV'], newline='') as f:
+    rows = [r for r in csv.reader(f) if r]
+
+with app.app_context():
+    for row in rows:
+        mac = row[0].strip().upper()
+        label = row[1].strip() if len(row) > 1 else ''
+        if not _MAC_RE.match(mac):
+            continue
+        authenticate_client(mac, '', is_iot=True, label=label)
+        n += 1
+print(n)
+")
+    ok "Restored $RESTORED IoT device(s). (Firewall rules for them apply once the portal service starts.)"
+fi
+
+# ---------------------------------------------------------------------------
 # 9. iptables environment file (read by systemd service)
 # ---------------------------------------------------------------------------
 cat > /etc/wifi-portal/iptables.env <<EOF
@@ -326,8 +361,6 @@ ok "Systemd services installed."
 # 11. Start everything
 # ---------------------------------------------------------------------------
 info "Starting services..."
-# Unblock the WiFi radio in case a soft rfkill was left after teardown.
-rfkill unblock wifi 2>/dev/null || true
 systemctl start hostapd
 systemctl start dnsmasq
 systemctl start wifi-portal
