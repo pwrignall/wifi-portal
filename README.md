@@ -74,6 +74,8 @@ The script will ask you for:
 | Gateway IP      | `192.168.100.1`                       | Pi's IP on the guest network                                                             |
 | DHCP pool       | `192.168.100.100` → `192.168.100.200` |                                                                                          |
 | Home LAN subnet | `192.168.1.0/24`                      | Blocked from guests                                                                      |
+| Home service IP (optional) | `192.168.1.50`          | Single IPv4 address only — no CIDR range, no hostname. Lets guest devices reach one home LAN service (e.g. Jellyfin) without portal auth. Leave blank to disable. Give that service a static IP or a DHCP reservation on your router, since a pinhole to a dynamic address will silently stop working if the lease changes |
+| Service port (optional)    | `8096`                   | TCP port for the pinholed service                                                        |
 | Admin password  | _(your choice)_                       | For the management dashboard                                                             |
 
 The script handles both **Raspberry Pi OS Bookworm** (NetworkManager) and
@@ -284,6 +286,10 @@ sudo systemctl restart wifi-portal
   removes the iptables ACCEPT rule for that MAC immediately.
 - **IoT isolation**: IoT devices get internet access but are still blocked from
   your home LAN — the home-subnet DROP rule is unconditional.
+- **Pinhole exception**: if you set a home service IP during setup (`PINHOLE_HOST`),
+  *any* guest device — authenticated or not — can reach that single host:port. It's
+  the one deliberate hole in the home-subnet DROP rule, so only point it at a
+  service you're fine exposing to anyone who joins the guest WiFi.
 - **The app runs as root** (required for iptables management). The Flask
   development server is used and should not be exposed to the internet —
   only to your internal guest and home networks.
